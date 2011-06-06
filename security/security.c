@@ -360,15 +360,46 @@ void security_inode_free(struct inode *inode)
 }
 
 int security_inode_init_security(struct inode *inode, struct inode *dir,
-				 const struct qstr *qstr, char **name,
-				 void **value, size_t *len)
+				 const struct qstr *qstr,
+				 const initxattrs initxattrs, void *fs_data)
+{
+	struct xattr new_xattrs[MAX_LSM_XATTR + 1];
+	struct xattr *lsm_xattr;
+	int ret;
+
+	if (unlikely(IS_PRIVATE(inode)))
+		return -EOPNOTSUPP;
+
+	memset(new_xattrs, 0, sizeof new_xattrs);
+	if (!initxattrs)
+		return security_ops->inode_init_security(inode, dir, qstr,
+							 NULL, NULL, NULL);
+	lsm_xattr = new_xattrs;
+	ret = security_ops->inode_init_security(inode, dir, qstr,
+						&lsm_xattr->name,
+						&lsm_xattr->value,
+						&lsm_xattr->value_len);
+	if (ret)
+		goto out;
+	ret = initxattrs(inode, new_xattrs, fs_data);
+out:
+	kfree(lsm_xattr->name);
+	kfree(lsm_xattr->value);
+
+	return (ret == -EOPNOTSUPP) ? 0 : ret;
+}
+EXPORT_SYMBOL(security_inode_init_security);
+
+int security_old_inode_init_security(struct inode *inode, struct inode *dir,
+				     const struct qstr *qstr, char **name,
+				     void **value, size_t *len)
 {
 	if (unlikely(IS_PRIVATE(inode)))
 		return -EOPNOTSUPP;
 	return security_ops->inode_init_security(inode, dir, qstr, name, value,
 						 len);
 }
-EXPORT_SYMBOL(security_inode_init_security);
+EXPORT_SYMBOL(security_old_inode_init_security);
 
 int security_new_inode_init_security(struct inode *inode, struct inode *dir,
 					const struct qstr *qstr,
