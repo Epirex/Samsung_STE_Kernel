@@ -1890,10 +1890,12 @@ static int selinux_binder_transfer_file(struct task_struct *from, struct task_st
 	struct inode *inode = file->f_path.dentry->d_inode;
 	struct inode_security_struct *isec = inode->i_security;
 	struct common_audit_data ad;
+	struct selinux_audit_data sad = {0,};
 	int rc;
 
 	COMMON_AUDIT_DATA_INIT(&ad, PATH);
 	ad.u.path = file->f_path;
+	ad.selinux_audit_data = &sad;
 
 	if (sid != fsec->sid) {
 		rc = avc_has_perm(sid, fsec->sid,
@@ -3618,8 +3620,8 @@ static int selinux_parse_skb_ipv4(struct sk_buff *skb,
 	if (ihlen < sizeof(_iph))
 		goto out;
 
-	ad->u.net.v4info.saddr = ih->saddr;
-	ad->u.net.v4info.daddr = ih->daddr;
+	ad->u.net->v4info.saddr = ih->saddr;
+	ad->u.net->v4info.daddr = ih->daddr;
 	ret = 0;
 
 	if (proto)
@@ -3637,8 +3639,8 @@ static int selinux_parse_skb_ipv4(struct sk_buff *skb,
 		if (th == NULL)
 			break;
 
-		ad->u.net.sport = th->source;
-		ad->u.net.dport = th->dest;
+		ad->u.net->sport = th->source;
+		ad->u.net->dport = th->dest;
 		break;
 	}
 
@@ -3653,8 +3655,8 @@ static int selinux_parse_skb_ipv4(struct sk_buff *skb,
 		if (uh == NULL)
 			break;
 
-		ad->u.net.sport = uh->source;
-		ad->u.net.dport = uh->dest;
+		ad->u.net->sport = uh->source;
+		ad->u.net->dport = uh->dest;
 		break;
 	}
 
@@ -3669,8 +3671,8 @@ static int selinux_parse_skb_ipv4(struct sk_buff *skb,
 		if (dh == NULL)
 			break;
 
-		ad->u.net.sport = dh->dccph_sport;
-		ad->u.net.dport = dh->dccph_dport;
+		ad->u.net->sport = dh->dccph_sport;
+		ad->u.net->dport = dh->dccph_dport;
 		break;
 	}
 
@@ -3696,8 +3698,8 @@ static int selinux_parse_skb_ipv6(struct sk_buff *skb,
 	if (ip6 == NULL)
 		goto out;
 
-	ipv6_addr_copy(&ad->u.net.v6info.saddr, &ip6->saddr);
-	ipv6_addr_copy(&ad->u.net.v6info.daddr, &ip6->daddr);
+	ipv6_addr_copy(&ad->u.net->v6info.saddr, &ip6->saddr);
+	ipv6_addr_copy(&ad->u.net->v6info.daddr, &ip6->daddr);
 	ret = 0;
 
 	nexthdr = ip6->nexthdr;
@@ -3717,8 +3719,8 @@ static int selinux_parse_skb_ipv6(struct sk_buff *skb,
 		if (th == NULL)
 			break;
 
-		ad->u.net.sport = th->source;
-		ad->u.net.dport = th->dest;
+		ad->u.net->sport = th->source;
+		ad->u.net->dport = th->dest;
 		break;
 	}
 
@@ -3729,8 +3731,8 @@ static int selinux_parse_skb_ipv6(struct sk_buff *skb,
 		if (uh == NULL)
 			break;
 
-		ad->u.net.sport = uh->source;
-		ad->u.net.dport = uh->dest;
+		ad->u.net->sport = uh->source;
+		ad->u.net->dport = uh->dest;
 		break;
 	}
 
@@ -3741,8 +3743,8 @@ static int selinux_parse_skb_ipv6(struct sk_buff *skb,
 		if (dh == NULL)
 			break;
 
-		ad->u.net.sport = dh->dccph_sport;
-		ad->u.net.dport = dh->dccph_dport;
+		ad->u.net->sport = dh->dccph_sport;
+		ad->u.net->dport = dh->dccph_dport;
 		break;
 	}
 
@@ -3762,13 +3764,13 @@ static int selinux_parse_skb(struct sk_buff *skb, struct common_audit_data *ad,
 	char *addrp;
 	int ret;
 
-	switch (ad->u.net.family) {
+	switch (ad->u.net->family) {
 	case PF_INET:
 		ret = selinux_parse_skb_ipv4(skb, ad, proto);
 		if (ret)
 			goto parse_error;
-		addrp = (char *)(src ? &ad->u.net.v4info.saddr :
-				       &ad->u.net.v4info.daddr);
+		addrp = (char *)(src ? &ad->u.net->v4info.saddr :
+				       &ad->u.net->v4info.daddr);
 		goto okay;
 
 #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
@@ -3776,8 +3778,8 @@ static int selinux_parse_skb(struct sk_buff *skb, struct common_audit_data *ad,
 		ret = selinux_parse_skb_ipv6(skb, ad, proto);
 		if (ret)
 			goto parse_error;
-		addrp = (char *)(src ? &ad->u.net.v6info.saddr :
-				       &ad->u.net.v6info.daddr);
+		addrp = (char *)(src ? &ad->u.net->v6info.saddr :
+				       &ad->u.net->v6info.daddr);
 		goto okay;
 #endif	/* IPV6 */
 	default:
@@ -3852,6 +3854,7 @@ static int sock_has_perm(struct task_struct *task, struct sock *sk, u32 perms)
 	struct sk_security_struct *sksec = sk->sk_security;
 	struct common_audit_data ad;
 	struct selinux_audit_data sad = {0,};
+	struct lsm_network_audit net = {0,};
 	u32 tsid = task_sid(task);
 
 	if (sksec->sid == SECINITSID_KERNEL)
@@ -3859,7 +3862,8 @@ static int sock_has_perm(struct task_struct *task, struct sock *sk, u32 perms)
 
 	COMMON_AUDIT_DATA_INIT(&ad, NET);
 	ad.selinux_audit_data = &sad;
-	ad.u.net.sk = sk;
+	ad.u.net = &net;
+	ad.u.net->sk = sk;
 
 	return avc_has_perm(tsid, sksec->sid, sksec->sclass, perms, &ad);
 }
@@ -3938,6 +3942,7 @@ static int selinux_socket_bind(struct socket *sock, struct sockaddr *address, in
 		struct sk_security_struct *sksec = sk->sk_security;
 		struct common_audit_data ad;
 		struct selinux_audit_data sad = {0,};
+		struct lsm_network_audit net = {0,};
 		struct sockaddr_in *addr4 = NULL;
 		struct sockaddr_in6 *addr6 = NULL;
 		unsigned short snum;
@@ -3965,8 +3970,9 @@ static int selinux_socket_bind(struct socket *sock, struct sockaddr *address, in
 					goto out;
 				COMMON_AUDIT_DATA_INIT(&ad, NET);
 				ad.selinux_audit_data = &sad;
-				ad.u.net.sport = htons(snum);
-				ad.u.net.family = family;
+				ad.u.net = &net;
+				ad.u.net->sport = htons(snum);
+				ad.u.net->family = family;
 				err = avc_has_perm(sksec->sid, sid,
 						   sksec->sclass,
 						   SOCKET__NAME_BIND, &ad);
@@ -3999,13 +4005,14 @@ static int selinux_socket_bind(struct socket *sock, struct sockaddr *address, in
 
 		COMMON_AUDIT_DATA_INIT(&ad, NET);
 		ad.selinux_audit_data = &sad;
-		ad.u.net.sport = htons(snum);
-		ad.u.net.family = family;
+		ad.u.net = &net;
+		ad.u.net->sport = htons(snum);
+		ad.u.net->family = family;
 
 		if (family == PF_INET)
-			ad.u.net.v4info.saddr = addr4->sin_addr.s_addr;
+			ad.u.net->v4info.saddr = addr4->sin_addr.s_addr;
 		else
-			ipv6_addr_copy(&ad.u.net.v6info.saddr, &addr6->sin6_addr);
+			ipv6_addr_copy(&ad.u.net->v6info.saddr, &addr6->sin6_addr);
 
 		err = avc_has_perm(sksec->sid, sid,
 				   sksec->sclass, node_perm, &ad);
@@ -4033,6 +4040,7 @@ static int selinux_socket_connect(struct socket *sock, struct sockaddr *address,
 	    sksec->sclass == SECCLASS_DCCP_SOCKET) {
 		struct common_audit_data ad;
 		struct selinux_audit_data sad = {0,};
+		struct lsm_network_audit net = {0,};
 		struct sockaddr_in *addr4 = NULL;
 		struct sockaddr_in6 *addr6 = NULL;
 		unsigned short snum;
@@ -4059,8 +4067,9 @@ static int selinux_socket_connect(struct socket *sock, struct sockaddr *address,
 
 		COMMON_AUDIT_DATA_INIT(&ad, NET);
 		ad.selinux_audit_data = &sad;
-		ad.u.net.dport = htons(snum);
-		ad.u.net.family = sk->sk_family;
+		ad.u.net = &net;
+		ad.u.net->dport = htons(snum);
+		ad.u.net->family = sk->sk_family;
 		err = avc_has_perm(sksec->sid, sid, sksec->sclass, perm, &ad);
 		if (err)
 			goto out;
@@ -4150,11 +4159,13 @@ static int selinux_socket_unix_stream_connect(struct sock *sock,
 	struct sk_security_struct *sksec_new = newsk->sk_security;
 	struct common_audit_data ad;
 	struct selinux_audit_data sad = {0,};
+	struct lsm_network_audit net = {0,};
 	int err;
 
 	COMMON_AUDIT_DATA_INIT(&ad, NET);
 	ad.selinux_audit_data = &sad;
-	ad.u.net.sk = other;
+	ad.u.net = &net;
+	ad.u.net->sk = other;
 
 	err = avc_has_perm(sksec_sock->sid, sksec_other->sid,
 			   sksec_other->sclass,
@@ -4182,10 +4193,12 @@ static int selinux_socket_unix_may_send(struct socket *sock,
 	struct sk_security_struct *osec = other->sk->sk_security;
 	struct common_audit_data ad;
 	struct selinux_audit_data sad = {0,};
+	struct lsm_network_audit net = {0,};
 
 	COMMON_AUDIT_DATA_INIT(&ad, NET);
 	ad.selinux_audit_data = &sad;
-	ad.u.net.sk = other->sk;
+	ad.u.net = &net;
+	ad.u.net->sk = other->sk;
 
 	return avc_has_perm(ssec->sid, osec->sid, osec->sclass, SOCKET__SENDTO,
 			    &ad);
@@ -4222,12 +4235,14 @@ static int selinux_sock_rcv_skb_compat(struct sock *sk, struct sk_buff *skb,
 	u32 sk_sid = sksec->sid;
 	struct common_audit_data ad;
 	struct selinux_audit_data sad = {0,};
+	struct lsm_network_audit net = {0,};
 	char *addrp;
 
 	COMMON_AUDIT_DATA_INIT(&ad, NET);
 	ad.selinux_audit_data = &sad;
-	ad.u.net.netif = skb->skb_iif;
-	ad.u.net.family = family;
+	ad.u.net = &net;
+	ad.u.net->netif = skb->skb_iif;
+	ad.u.net->family = family;
 	err = selinux_parse_skb(skb, &ad, &addrp, 1, NULL);
 	if (err)
 		return err;
@@ -4255,6 +4270,7 @@ static int selinux_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
 	u32 sk_sid = sksec->sid;
 	struct common_audit_data ad;
 	struct selinux_audit_data sad = {0,};
+	struct lsm_network_audit net = {0,};
 	char *addrp;
 	u8 secmark_active;
 	u8 peerlbl_active;
@@ -4280,8 +4296,9 @@ static int selinux_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
 
 	COMMON_AUDIT_DATA_INIT(&ad, NET);
 	ad.selinux_audit_data = &sad;
-	ad.u.net.netif = skb->skb_iif;
-	ad.u.net.family = family;
+	ad.u.net = &net;
+	ad.u.net->netif = skb->skb_iif;
+	ad.u.net->family = family;
 	err = selinux_parse_skb(skb, &ad, &addrp, 1, NULL);
 	if (err)
 		return err;
@@ -4617,6 +4634,7 @@ static unsigned int selinux_ip_forward(struct sk_buff *skb, int ifindex,
 	u32 peer_sid;
 	struct common_audit_data ad;
 	struct selinux_audit_data sad = {0,};
+	struct lsm_network_audit net = {0,};
 	u8 secmark_active;
 	u8 netlbl_active;
 	u8 peerlbl_active;
@@ -4635,8 +4653,9 @@ static unsigned int selinux_ip_forward(struct sk_buff *skb, int ifindex,
 
 	COMMON_AUDIT_DATA_INIT(&ad, NET);
 	ad.selinux_audit_data = &sad;
-	ad.u.net.netif = ifindex;
-	ad.u.net.family = family;
+	ad.u.net = &net;
+	ad.u.net->netif = ifindex;
+	ad.u.net->family = family;
 	if (selinux_parse_skb(skb, &ad, &addrp, 1, NULL) != 0)
 		return NF_DROP;
 
@@ -4724,6 +4743,7 @@ static unsigned int selinux_ip_postroute_compat(struct sk_buff *skb,
 	struct sk_security_struct *sksec;
 	struct common_audit_data ad;
 	struct selinux_audit_data sad = {0,};
+	struct lsm_network_audit net = {0,};
 	char *addrp;
 	u8 proto;
 
@@ -4733,8 +4753,9 @@ static unsigned int selinux_ip_postroute_compat(struct sk_buff *skb,
 
 	COMMON_AUDIT_DATA_INIT(&ad, NET);
 	ad.selinux_audit_data = &sad;
-	ad.u.net.netif = ifindex;
-	ad.u.net.family = family;
+	ad.u.net = &net;
+	ad.u.net->netif = ifindex;
+	ad.u.net->family = family;
 	if (selinux_parse_skb(skb, &ad, &addrp, 0, &proto))
 		return NF_DROP;
 
@@ -4757,6 +4778,7 @@ static unsigned int selinux_ip_postroute(struct sk_buff *skb, int ifindex,
 	struct sock *sk;
 	struct common_audit_data ad;
 	struct selinux_audit_data sad = {0,};
+	struct lsm_network_audit net = {0,};
 	char *addrp;
 	u8 secmark_active;
 	u8 peerlbl_active;
@@ -4804,8 +4826,9 @@ static unsigned int selinux_ip_postroute(struct sk_buff *skb, int ifindex,
 
 	COMMON_AUDIT_DATA_INIT(&ad, NET);
 	ad.selinux_audit_data = &sad;
-	ad.u.net.netif = ifindex;
-	ad.u.net.family = family;
+	ad.u.net = &net;
+	ad.u.net->netif = ifindex;
+	ad.u.net->family = family;
 	if (selinux_parse_skb(skb, &ad, &addrp, 0, NULL))
 		return NF_DROP;
 
