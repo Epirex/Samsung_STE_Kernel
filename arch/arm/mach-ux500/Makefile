@@ -138,3 +138,4 @@ endif
 endif
 endif
 obj-$(CONFIG_MACH_SAMSUNG_UX500)	+= sec_common.o
+obj-$(CONFIG_U8500_HOTPLUG)		+= u8500_hotplug.o

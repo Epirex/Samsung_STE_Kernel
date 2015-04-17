@@ -348,6 +348,9 @@ config MACH_CODINA_EURO
 	help
 	  Supports Codina Euro boards.
 
+config U8500_HOTPLUG
+	depends on MACH_SAMSUNG_U8500
+	bool "Samsung U8500 hotplug option"
 source "arch/arm/mach-ux500/Kconfig-arch"
 source "arch/arm/mach-ux500/pm/Kconfig"
 source "arch/arm/mach-ux500/test/Kconfig"
