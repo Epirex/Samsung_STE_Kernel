@@ -22,7 +22,6 @@ static const int write_expire = 5 * HZ; /* ditto for writes, these limits are SO
 static const int writes_starved = 8;    /* max times reads can starve a write */
 static const int fifo_batch = 1;       /* # of sequential requests treated as one
 				     by the above parameters. For throughput. */
-static const int front_merges = 1;
 struct deadline_data {
 	/*
 	 * run time data
@@ -352,7 +351,7 @@ static void *deadline_init_queue(struct request_queue *q)
 	dd->fifo_expire[READ] = read_expire;
 	dd->fifo_expire[WRITE] = write_expire;
 	dd->writes_starved = writes_starved;
-	dd->front_merges = front_merges;
+	dd->front_merges = 0;
 	dd->fifo_batch = fifo_batch;
 	return dd;
 }
