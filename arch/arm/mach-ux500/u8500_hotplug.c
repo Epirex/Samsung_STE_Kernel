@@ -102,7 +102,7 @@ static void resume_work_fn(struct work_struct *work)
 {
 	int cpu;
 
-	max_freq_limit(false);
+	if (suspend_max_freq) max_freq_limit(false);
 
 	for_each_possible_cpu(cpu) {
 		if (!cpu)
