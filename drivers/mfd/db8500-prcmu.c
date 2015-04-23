@@ -1828,15 +1828,15 @@ static int arm_set_rate(unsigned long rate)
 		return 0;
 #endif
 
-#if CONFIG_LIVEOPP_DEBUG > 0
-	pr_info("kHz: %10lu\n", frequency);
-#endif
-
 	/*  catch early access */
 	BUG_ON(!freq_table);
 
 	for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
 		if (frequency == freq_table[i].frequency) {
+#if CONFIG_LIVEOPP_DEBUG > 0
+			pr_info("[LiveOPP] (%d -> %d) kHz: %10lu\n", last_arm_idx, i, frequency);
+#endif
+
 			db8500_prcmu_set_arm_lopp(liveopp_arm[i].arm_opp, i);
 			last_arm_idx = i;
 
@@ -4456,6 +4456,7 @@ static int __init late(void)
 	#ifdef CONFIG_DB8500_LIVEOPP
 	int ret;
 	#endif /* CONFIG_DB8500_LIVEOPP */
+#ifdef CONFIG_TRACING
 	extern int tracing_update_buffers(void);
 #ifdef ENABLE_FTRACE_BY_DEFAULT
 	extern int tracing_set_tracer(const char *buf);
@@ -4473,7 +4474,7 @@ static int __init late(void)
 	trace_set_clr_event("workqueue", "workqueue_execute_end", 1);
 	trace_set_clr_event("power", "cpu_frequency", 1);
 	trace_set_clr_event("prcmu", NULL, 1);
-
+#endif
 	#ifdef CONFIG_DB8500_LIVEOPP
 	liveopp_kobject = kobject_create_and_add("liveopp", kernel_kobj);
 	if (!liveopp_kobject) {
