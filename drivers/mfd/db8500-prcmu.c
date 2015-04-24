@@ -1621,7 +1621,7 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step12_interface.attr, 
 	&arm_step13_interface.attr, 
 	&arm_step14_interface.attr, 
-	&arm_step13_interface.attr, 
+	&arm_step15_interface.attr, 
 	&pllddr_interface.attr, 
 	NULL,
 };
