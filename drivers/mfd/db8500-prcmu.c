@@ -1537,7 +1537,7 @@ ARM_STEP(arm_step11, 11);
 ARM_STEP(arm_step12, 12);
 ARM_STEP(arm_step13, 13);
 ARM_STEP(arm_step14, 14);
-ARM_STEP(arm_step13, 15);
+ARM_STEP(arm_step15, 15);
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static ssize_t liveopp_start_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
