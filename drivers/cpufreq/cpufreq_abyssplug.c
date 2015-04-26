@@ -31,7 +31,7 @@
 #include <linux/sched.h>
 #include <linux/err.h>
 #include <linux/slab.h>
-#include <linux/u8500_hotplug.h>
+#include <linux/input/input_boost.h>
 
 /* greater than 80% avg load across online CPUs increases frequency */
 #define DEFAULT_UP_FREQ_MIN_LOAD			(80)
@@ -454,7 +454,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	unsigned int i, j;
 
 	bool boosted = ktime_to_us(ktime_get()) < (last_input_time + input_boost_ms * 1000);
-
+	
 	policy = this_dbs_info->cur_policy;
 
 	/*
@@ -561,12 +561,12 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 		goto out;
 	}
-
+	
 	if (boosted) {
 		if (policy->cur < input_boost_freq)
 			__cpufreq_driver_target(policy, input_boost_freq, CPUFREQ_RELATION_H);
 
-		goto out;
+		return;
 	}
 
 	/* check for frequency decrease */

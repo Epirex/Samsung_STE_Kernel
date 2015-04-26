@@ -22,7 +22,7 @@
 #include <linux/tick.h>
 #include <linux/ktime.h>
 #include <linux/sched.h>
-#include <linux/u8500_hotplug.h>
+#include <linux/input/input_boost.h>
 
 /*
  * dbs is used in this file as a shortform for demandbased switching
@@ -31,7 +31,7 @@
 
 #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
 #define DEF_FREQUENCY_UP_THRESHOLD		(80)
-#define DEF_SAMPLING_DOWN_FACTOR		(1)
+#define DEF_SAMPLING_DOWN_FACTOR		(2)
 #define MAX_SAMPLING_DOWN_FACTOR		(100000)
 #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
 #define MICRO_FREQUENCY_UP_THRESHOLD		(95)
@@ -432,6 +432,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	unsigned int max_load_freq;
 	struct cpufreq_policy *policy;
 	unsigned int j;
+	
 	bool boosted = ktime_to_us(ktime_get()) < (last_input_time + input_boost_ms * 1000);
 
 	this_dbs_info->freq_lo = 0;
@@ -526,7 +527,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		dbs_freq_increase(policy, policy->max);
 		return;
 	}
-
+	
 	if (boosted) {
 		if (policy->cur < input_boost_freq)
 			dbs_freq_increase(policy, input_boost_freq);
