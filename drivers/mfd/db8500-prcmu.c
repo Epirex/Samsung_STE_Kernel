@@ -1137,16 +1137,10 @@ static int liveopp_start = 0;
 #define ARM_MAX_OPP_IDX 	9	/* 1000MHz */
 
 static struct liveopp_arm_table liveopp_arm[] = {
-        {  50000,   46080,  ARM_EXTCLK, SET_EXT, 0x582,   NOCHG, 0x00050106, SET_VOLT, 0x0C, 0x16, 0xDB,  25,  25},
-	{ 100000,   99840,  ARM_EXTCLK, SET_EXT, 0x582,   NOCHG, 0x00050168, SET_VOLT, 0x0C, 0x17, 0xDB,  25,  25},
 	{ 200000,  199680,  ARM_EXTCLK, SET_EXT, 0x581,   NOCHG, 0x00050168, SET_VOLT, 0x0C, 0x18, 0xDB,  25,  25},
-	{ 300000,  299520,  ARM_50_OPP,   NOCHG, 0x741, SET_PLL, 0x0105014E, SET_VOLT, 0x0C, 0x19, 0xDB,  25,  25},
 	{ 400000,  399360,  ARM_50_OPP,   NOCHG, 0x741, SET_PLL, 0x01050168, SET_VOLT, 0x0C, 0x1A, 0xDB,  50,  50},
-	{ 500000,  499200,  ARM_50_OPP,   NOCHG, 0x741, SET_PLL, 0x01050182, SET_VOLT, 0x0C, 0x1E, 0xDB,  50,  50},
 	{ 600000,  599040,  ARM_50_OPP,   NOCHG, 0x741, SET_PLL, 0x0105019C, SET_VOLT, 0x0C, 0x20, 0xDB,  50,  50},
-	{ 700000,  698880,  ARM_50_OPP,   NOCHG, 0x741, SET_PLL, 0x010501B6, SET_VOLT, 0x0C, 0x22, 0xDB,  50,  50},
 	{ 800000,  798720, ARM_100_OPP,   NOCHG, 0x741, SET_PLL, 0x00050168, SET_VOLT, 0x0B, 0x24, 0xDB, 100,  50},
-	{ 900000,  898560, ARM_100_OPP,   NOCHG, 0x741, SET_PLL, 0x00050175, SET_VOLT, 0x0B, 0x29, 0xDB, 100, 100},
 	{1000000,  998400, ARM_MAX_OPP,   NOCHG, 0x741, SET_PLL, 0x0001011A, SET_VOLT, 0x0B, 0x2F, 0xDB, 100, 100},
 	{1050000, 1049600, ARM_MAX_OPP,   NOCHG, 0x741, SET_PLL, 0x00030152, SET_VOLT, 0x0B, 0x34, 0xDB, 100, 100},
 	{1100000, 1100800, ARM_MAX_OPP,   NOCHG, 0x741, SET_PLL, 0x00030156, SET_VOLT, 0x0B, 0x36, 0x8F, 100, 100},
@@ -1510,12 +1504,6 @@ ARM_STEP(arm_step06, 6);
 ARM_STEP(arm_step07, 7);
 ARM_STEP(arm_step08, 8);
 ARM_STEP(arm_step09, 9);
-ARM_STEP(arm_step10, 10);
-ARM_STEP(arm_step11, 11);
-ARM_STEP(arm_step12, 12);
-ARM_STEP(arm_step13, 13);
-ARM_STEP(arm_step14, 14);
-ARM_STEP(arm_step15, 15);
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static ssize_t liveopp_start_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
@@ -1594,12 +1582,6 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step07_interface.attr, 
 	&arm_step08_interface.attr, 
 	&arm_step09_interface.attr, 
-	&arm_step10_interface.attr, 
-	&arm_step11_interface.attr, 
-	&arm_step12_interface.attr, 
-	&arm_step13_interface.attr, 
-	&arm_step14_interface.attr, 
-	&arm_step15_interface.attr, 
 	&pllddr_interface.attr, 
 	NULL,
 };
