@@ -5046,37 +5046,12 @@ static void  db8500_prcmu_update_freq(void *pdata)
 		}
 
 		/* Recalibrate voltages */
-		/*
 		if (liveopp_arm[i].freq_show <= 1000000) {
 			liveopp_arm[i].vbbx_raw = avs_vbb;
 		}
 		switch (liveopp_arm[i].freq_show) {
-			case 100000:
-				liveopp_arm[i].varm_raw = avs_varm_50  - 3;
-				break;
-			case 200000:
-				liveopp_arm[i].varm_raw = avs_varm_50  - 2;
-				break;
-			case 300000:
-				liveopp_arm[i].varm_raw = avs_varm_50  - 1;
-				break;
-			case 400000:
-				liveopp_arm[i].varm_raw = avs_varm_50;
-				break;
-			case 500000:
-				liveopp_arm[i].varm_raw = avs_varm_50  + 4;
-				break;
-			case 600000:
-				liveopp_arm[i].varm_raw = avs_varm_100 - 4;
-				break;
-			case 700000:
-				liveopp_arm[i].varm_raw = avs_varm_100 - 2;
-				break;
 			case 800000:
 				liveopp_arm[i].varm_raw = avs_varm_100;
-				break;
-			case 900000:
-				liveopp_arm[i].varm_raw = avs_varm_100 + 4;
 				break;
 			case 1000000:
 				liveopp_arm[i].varm_raw = avs_varm_max;
@@ -5084,7 +5059,6 @@ static void  db8500_prcmu_update_freq(void *pdata)
 			default:
 				break;
 		}
-		*/
 	}
 	#else /* CONFIG_DB8500_LIVEOPP */
 	if  (!db8500_prcmu_has_arm_maxopp())
