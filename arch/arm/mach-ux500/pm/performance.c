@@ -25,7 +25,7 @@
 
 int wlan_probe_delay = WLAN_PROBE_DELAY_DEFAULT;
 int wlan_limit = WLAN_LIMIT_DEFAULT;
-int wlan_arm_khz = 400000;
+int wlan_arm_khz = 200000;
 
 /*
  * MMC TODO:
@@ -76,7 +76,7 @@ int perf_mmc_probe_delay = PERF_MMC_PROBE_DELAY_DEFAULT;
 int perf_mmc_limit_read = PERF_MMC_LIMIT_READ_DEFAULT;
 int perf_mmc_limit_write = PERF_MMC_LIMIT_WRITE_DEFAULT;
 int perf_mmc_limit_combined = 8192;
-int perf_mmc_arm_khz = 400000;
+int perf_mmc_arm_khz = 200000;
 
 INT_PARAM_RW(mmc_probe_delay, perf_mmc_probe_delay);
 INT_PARAM_RW(mmc_limit_read, perf_mmc_limit_read);
