@@ -31,7 +31,7 @@
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
 #include <asm/cputime.h>
-#include <linux/u8500_hotplug.h>
+#include <linux/input/input_boost.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
