@@ -31,7 +31,6 @@
 #include <linux/sched.h>
 #include <linux/err.h>
 #include <linux/slab.h>
-#include <linux/input/input_boost.h>
 
 /* greater than 80% avg load across online CPUs increases frequency */
 #define DEFAULT_UP_FREQ_MIN_LOAD			(80)
