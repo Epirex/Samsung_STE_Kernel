@@ -54,9 +54,9 @@
 #define AB8500_VAPE_SEL2	 	0x0F
 #define AB8500_VAPE_STEP_UV		12500
 #define AB8500_VAPE_MIN_UV		700000
-#define AB8500_VAPE_MAX_UV		1362500
+#define AB8500_VAPE_MAX_UV		1487500
 
-#define MALI_CLOCK_DEFLO		307200
+#define MALI_CLOCK_DEFLO		399360
 #define MALI_CLOCK_DEFHI		499200
 
 struct mali_dvfs_data
@@ -67,12 +67,13 @@ struct mali_dvfs_data
 };
 
 static struct mali_dvfs_data mali_dvfs[] = {
-	{122880, 0x00050110, 0x26},
-	{184320, 0x00050118, 0x26},
-	{245760, 0x00050120, 0x26},
-	{307200, 0x00050128, 0x26},
-	{360960, 0x0005012f, 0x26},
-	{422400, 0x00050137, 0x29},
+	{122880, 0x00050110, 0x20},
+	{184320, 0x00050118, 0x20},
+	{245760, 0x00050120, 0x20},
+	{307200, 0x00050128, 0x20},
+	{360960, 0x0005012f, 0x20},
+	{399360, 0x00050134, 0x20},
+	{445440, 0x0005013a, 0x2B},
 	{499200, 0x00050141, 0x2F},
 	{545280, 0x00050147, 0x31},
 	{606720, 0x0005014f, 0x34},
@@ -116,7 +117,7 @@ static struct delayed_work mali_boost_delayedwork;
 
 static int vape_voltage(u8 raw)
 {
-	if (raw <= 0x35) {
+	if (raw <= 0x3F) {
 		return (AB8500_VAPE_MIN_UV + (raw * AB8500_VAPE_STEP_UV));
 	} else {
 		return AB8500_VAPE_MAX_UV;
@@ -328,7 +329,15 @@ void mali_utilization_function(struct work_struct *ptr)
 	mutex_lock(&mali_boost_lock);
 	if ((!boost_required && !boost_working && !boost_scheduled) || !boost_enable) {
 		// consider power saving mode (APE_50_OPP) only if we're not on boost
-		if (mali_last_utilization > mali_utilization_low_to_high) {
+		int ape_opp = prcmu_get_ape_opp();
+		/*
+		if APE_OPP==100 because someone else wanted this (touchboost in particular) and not mali,
+		we should check if utilization is high enough so we can also request high ape to maintain
+		satisfying UI performance.
+		*/
+		int up_threshold = (ape_opp == APE_50_OPP && has_requested_low ? mali_utilization_low_to_high : (mali_utilization_high_to_low));
+
+		if (mali_last_utilization >= up_threshold) {
 			if (has_requested_low) {
 				MALI_DEBUG_PRINT(5, ("MALI GPU utilization: %u SIGNAL_HIGH\n", mali_last_utilization));
 				/*Request 100% APE_OPP.*/
@@ -759,6 +768,7 @@ _mali_osk_errcode_t mali_platform_init()
 		}
 
 		INIT_WORK(&mali_utilization_work, mali_utilization_function);
+		//TODO register a notifier block with prcmu opp update func to monitor ape opp
 		INIT_DELAYED_WORK(&mali_boost_delayedwork, mali_boost_work);
 
 		regulator = regulator_get(NULL, "v-mali");
