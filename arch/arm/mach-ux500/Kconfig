@@ -348,6 +348,13 @@ config MACH_CODINA_EURO
 	help
 	  Supports Codina Euro boards.
 
+config FORCE_FAST_CHARGE
+	bool "Force AC charge mode at will"
+	default n
+	help
+	  A simple sysfs interface to force adapters that
+	  are detected as USB to charge as AC.
+
 source "arch/arm/mach-ux500/Kconfig-arch"
 source "arch/arm/mach-ux500/pm/Kconfig"
 source "arch/arm/mach-ux500/test/Kconfig"
