@@ -40,7 +40,7 @@
 #define MALI_HIGH_TO_LOW_LEVEL_UTILIZATION_LIMIT 64
 #define MALI_LOW_TO_HIGH_LEVEL_UTILIZATION_LIMIT 192
 
-#define MALI_UX500_VERSION		"1.0.1"
+#define MALI_UX500_VERSION		"1.0.2"
 
 #define MALI_MAX_UTILIZATION		256
 
@@ -48,16 +48,16 @@
 #define PRCMU_PLLSOC0			0x0080
 
 #define PRCMU_SGACLK_INIT		0x00000021
-#define PRCMU_PLLSOC0_INIT		0x01050168
+#define PRCMU_PLLSOC0_INIT		0x00050134
 
 #define AB8500_VAPE_SEL1 		0x0E
 #define AB8500_VAPE_SEL2	 	0x0F
 #define AB8500_VAPE_STEP_UV		12500
 #define AB8500_VAPE_MIN_UV		700000
-#define AB8500_VAPE_MAX_UV		1362500
+#define AB8500_VAPE_MAX_UV		1487500
 
 #define MALI_CLOCK_DEFLO		399360
-#define MALI_CLOCK_DEFHI		480000
+#define MALI_CLOCK_DEFHI		499200
 
 struct mali_dvfs_data
 {
@@ -67,30 +67,20 @@ struct mali_dvfs_data
 };
 
 static struct mali_dvfs_data mali_dvfs[] = {
-	{192000, 0x0101010A, 0x26},
-	{256000, 0x01030128, 0x26},
-	{299520, 0x0105014E, 0x26},
-	{320000, 0x01030132, 0x26},
-	{360000, 0x0105015E, 0x26},
-	{399360, 0x01050168, 0x26},
-	{422400, 0x01010116, 0x26},
-	{441600, 0x0102012E, 0x26},
-	{460800, 0x01010118, 0x29},
-	{480000, 0x01020132, 0x2A},
-	{499200, 0x0101011A, 0x2B},
-	{518400, 0x01020136, 0x2C},
-	{537600, 0x0101011C, 0x2D},
-	{560640, 0x01050192, 0x2F},
-	{579840, 0x01050197, 0x30},
-	{600000, 0x0104017D, 0x32},
-	{619200, 0x01040181, 0x33},
-	{640000, 0x01030164, 0x34},
-	{660480, 0x010501AC, 0x3F},
-	{679680, 0x010501B1, 0x3F},
-	{700800, 0x01040192, 0x3F},
-	{710400, 0x01010125, 0x3F},
-	{720000, 0x01040196, 0x3F},
-	{729600, 0x01010126, 0x3F},
+	{122880, 0x00050110, 0x20},
+	{184320, 0x00050118, 0x20},
+	{245760, 0x00050120, 0x20},
+	{307200, 0x00050128, 0x20},
+	{360960, 0x0005012f, 0x20},
+	{399360, 0x00050134, 0x20},
+	{445440, 0x0005013a, 0x20},
+	{499200, 0x00050141, 0x2B},
+	{545280, 0x00050147, 0x2D},
+	{606720, 0x0005014f, 0x32},
+	{668160, 0x00050157, 0x3F},
+	{729600, 0x0005015f, 0x3F},
+	{783360, 0x00050166, 0x3F},
+	{806400, 0x00050169, 0x3F},
 };
 
 int mali_utilization_high_to_low = MALI_HIGH_TO_LOW_LEVEL_UTILIZATION_LIMIT;
@@ -115,7 +105,7 @@ static u32 boost_enable 	= 1;
 static u32 boost_working 	= 0;
 static u32 boost_scheduled 	= 0;
 static u32 boost_required 	= 0;
-static u32 boost_delay 		= 500;
+static u32 boost_delay 		= 200;
 static u32 boost_low 		= 0;
 static u32 boost_high 		= 0;
 static u32 boost_upthreshold 	= 233;
@@ -127,7 +117,7 @@ static struct delayed_work mali_boost_delayedwork;
 
 static int vape_voltage(u8 raw)
 {
-	if (raw <= 0x35) {
+	if (raw <= 0x3F) {
 		return (AB8500_VAPE_MIN_UV + (raw * AB8500_VAPE_STEP_UV));
 	} else {
 		return AB8500_VAPE_MAX_UV;
@@ -339,7 +329,15 @@ void mali_utilization_function(struct work_struct *ptr)
 	mutex_lock(&mali_boost_lock);
 	if ((!boost_required && !boost_working && !boost_scheduled) || !boost_enable) {
 		// consider power saving mode (APE_50_OPP) only if we're not on boost
-		if (mali_last_utilization > mali_utilization_low_to_high) {
+		int ape_opp = prcmu_get_ape_opp();
+		/*
+		if APE_OPP==100 because someone else wanted this (touchboost in particular) and not mali,
+		we should check if utilization is high enough so we can also request high ape to maintain
+		satisfying UI performance.
+		*/
+		int up_threshold = (ape_opp == APE_50_OPP && has_requested_low ? mali_utilization_low_to_high : (mali_utilization_high_to_low));
+
+		if (mali_last_utilization >= up_threshold) {
 			if (has_requested_low) {
 				MALI_DEBUG_PRINT(5, ("MALI GPU utilization: %u SIGNAL_HIGH\n", mali_last_utilization));
 				/*Request 100% APE_OPP.*/
@@ -770,6 +768,7 @@ _mali_osk_errcode_t mali_platform_init()
 		}
 
 		INIT_WORK(&mali_utilization_work, mali_utilization_function);
+		//TODO register a notifier block with prcmu opp update func to monitor ape opp
 		INIT_DELAYED_WORK(&mali_boost_delayedwork, mali_boost_work);
 
 		regulator = regulator_get(NULL, "v-mali");

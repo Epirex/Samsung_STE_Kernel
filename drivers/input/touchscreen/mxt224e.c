@@ -140,8 +140,8 @@ static u8 parameter3_t48_val;
 
 /* cocafe: Touch Booster Control */
 #ifdef TOUCH_BOOSTER
-#define TOUCHBOOST_FREQ_DEF		400000
-#define TOUCHBOOST_DELAY_DEF		500
+#define TOUCHBOOST_FREQ_DEF		0
+#define TOUCHBOOST_DELAY_DEF		200
 
 static bool touchboost = false;
 static bool touchboost_ape = true;
