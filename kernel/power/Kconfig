@@ -324,3 +324,7 @@ config SUSPEND_TIME
 
 config DVFS_LIMIT
 	bool "DVFS frequency limitation feature"
+
+config CPU_PM
+	bool
+	depends on SUSPEND || CPU_IDLE
