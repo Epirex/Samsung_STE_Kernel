@@ -18,6 +18,13 @@ fi
 
 busybox cpio -i < ${load_image}
 
+busybox sed -i -e "s/ro.secure=1/ro.secure=0/" /default.prop
+if [ grep ro.adb.secure /default.prop ]; then
+	busybox sed -i -e "s/ro.adb.secure=1/ro.adb.secure=0/" /default.prop
+else
+	echo "ro.adb.secure=0" >> /default.prop
+fi
+
 busybox umount /sys
 busybox umount /proc
 busybox date >>boot.txt
