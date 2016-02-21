@@ -49,6 +49,7 @@ obj-$(CONFIG_PC8736x_GPIO)	+= pc8736x_gpio.o
 obj-$(CONFIG_NSC_GPIO)		+= nsc_gpio.o
 obj-$(CONFIG_GPIO_TB0219)	+= tb0219.o
 obj-$(CONFIG_TELCLOCK)		+= tlclk.o
+obj-$(CONFIG_FRANDOM)           += frandom.o
 
 ifdef CONFIG_PHONET
 obj-$(CONFIG_U8500_SHRM)	+= shrm_char.o
