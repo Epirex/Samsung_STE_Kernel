@@ -18,8 +18,6 @@
 #include <linux/security.h>
 #include <linux/ima.h>
 
-#define MAX_LSM_XATTR	1
-
 /* Boot-time LSM user choice */
 static __initdata char chosen_lsm[SECURITY_NAME_MAX + 1] =
 	CONFIG_DEFAULT_SECURITY;
@@ -129,26 +127,6 @@ int __init register_security(struct security_operations *ops)
 
 /* Security operations */
 
-int security_binder_set_context_mgr(struct task_struct *mgr)
-{
-	return security_ops->binder_set_context_mgr(mgr);
-}
-
-int security_binder_transaction(struct task_struct *from, struct task_struct *to)
-{
-	return security_ops->binder_transaction(from, to);
-}
-
-int security_binder_transfer_binder(struct task_struct *from, struct task_struct *to)
-{
-	return security_ops->binder_transfer_binder(from, to);
-}
-
-int security_binder_transfer_file(struct task_struct *from, struct task_struct *to, struct file *file)
-{
-	return security_ops->binder_transfer_file(from, to, file);
-}
-
 int security_ptrace_access_check(struct task_struct *child, unsigned int mode)
 {
 	return security_ops->ptrace_access_check(child, mode);
@@ -179,7 +157,8 @@ int security_capset(struct cred *new, const struct cred *old,
 int security_capable(struct user_namespace *ns, const struct cred *cred,
 		     int cap)
 {
-	return security_ops->capable(cred, ns, cap, SECURITY_CAP_AUDIT);
+	return security_ops->capable(current, cred, ns, cap,
+				     SECURITY_CAP_AUDIT);
 }
 
 int security_real_capable(struct task_struct *tsk, struct user_namespace *ns,
@@ -189,7 +168,7 @@ int security_real_capable(struct task_struct *tsk, struct user_namespace *ns,
 	int ret;
 
 	cred = get_task_cred(tsk);
-	ret = security_ops->capable(cred, ns, cap, SECURITY_CAP_AUDIT);
+	ret = security_ops->capable(tsk, cred, ns, cap, SECURITY_CAP_AUDIT);
 	put_cred(cred);
 	return ret;
 }
@@ -201,7 +180,7 @@ int security_real_capable_noaudit(struct task_struct *tsk,
 	int ret;
 
 	cred = get_task_cred(tsk);
-	ret = security_ops->capable(cred, ns, cap, SECURITY_CAP_NOAUDIT);
+	ret = security_ops->capable(tsk, cred, ns, cap, SECURITY_CAP_NOAUDIT);
 	put_cred(cred);
 	return ret;
 }
@@ -401,37 +380,6 @@ int security_old_inode_init_security(struct inode *inode, struct inode *dir,
 }
 EXPORT_SYMBOL(security_old_inode_init_security);
 
-int security_new_inode_init_security(struct inode *inode, struct inode *dir,
-					const struct qstr *qstr,
-					const initxattrs initxattrs, void *fs_data)
-{
-	struct xattr new_xattrs[MAX_LSM_XATTR + 1];
-	struct xattr *lsm_xattr;
-	int ret;
-
-	if (unlikely(IS_PRIVATE(inode)))
-		return -EOPNOTSUPP;
-
-	memset(new_xattrs, 0, sizeof new_xattrs);
-	if (!initxattrs)
-		return security_ops->inode_init_security(inode, dir, qstr,
-							 NULL, NULL, NULL);
-	lsm_xattr = new_xattrs;
-	ret = security_ops->inode_init_security(inode, dir, qstr,
-						&lsm_xattr->name,
-						&lsm_xattr->value,
-						&lsm_xattr->value_len);
-	if (ret)
-		goto out;
-	ret = initxattrs(inode, new_xattrs, fs_data);
-out:
-	kfree(lsm_xattr->name);
-	kfree(lsm_xattr->value);
-
-	return (ret == -EOPNOTSUPP) ? 0 : ret;
-}
-EXPORT_SYMBOL(security_new_inode_init_security);
-
 #ifdef CONFIG_SECURITY_PATH
 int security_path_mknod(struct path *dir, struct dentry *dentry, int mode,
 			unsigned int dev)
@@ -601,17 +549,14 @@ int security_inode_permission(struct inode *inode, int mask)
 {
 	if (unlikely(IS_PRIVATE(inode)))
 		return 0;
-	return security_ops->inode_permission(inode, mask);
+	return security_ops->inode_permission(inode, mask, 0);
 }
 
 int security_inode_exec_permission(struct inode *inode, unsigned int flags)
 {
-	int mask = MAY_EXEC;
 	if (unlikely(IS_PRIVATE(inode)))
 		return 0;
-	if (flags)
-		mask |= MAY_NOT_BLOCK;
-	return security_ops->inode_permission(inode, mask);
+	return security_ops->inode_permission(inode, MAY_EXEC, flags);
 }
 
 int security_inode_setattr(struct dentry *dentry, struct iattr *attr)
