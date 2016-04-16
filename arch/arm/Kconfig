@@ -2149,4 +2149,6 @@ source "arch/arm/Kconfig.debug"
 
 source "security/Kconfig"
 
+source "crypto/Kconfig"
+
 source "lib/Kconfig"
