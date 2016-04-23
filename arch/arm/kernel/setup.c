@@ -660,6 +660,11 @@ static int __init parse_tag_revision(const struct tag *tag)
 
 __tagtable(ATAG_REVISION, parse_tag_revision);
 
+unsigned int bootmode = 0;
+EXPORT_SYMBOL(bootmode);
+static unsigned int setup_debug = 0;
+module_param_named(setup_debug, setup_debug, uint, 0644);
+
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
 #if defined(CONFIG_CMDLINE_EXTEND)
@@ -672,6 +677,13 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 	strlcpy(default_command_line, tag->u.cmdline.cmdline,
 		COMMAND_LINE_SIZE);
 #endif
+
+	if (unlikely(!bootmode && (strstr(default_command_line, "bootmode=2") != NULL)) == true) {
+		bootmode = 2;
+		if (unlikely(setup_debug > 0))
+			pr_err("setup: bootmode=2");
+	}
+
 	return 0;
 }
 
