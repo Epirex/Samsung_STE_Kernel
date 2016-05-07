@@ -20,8 +20,6 @@
 
 #define MALI_PM_LIGHT_SLEEP_TIMEOUT 1000
 
-int mali_pm_sampling_rate = MALI_PM_LIGHT_SLEEP_TIMEOUT;
-
 enum mali_pm_scheme
 {
 	MALI_PM_SCHEME_DYNAMIC,
@@ -57,7 +55,7 @@ static enum mali_pm_level next_level_dynamic = MALI_PM_LEVEL_2_STANDBY; /* Shoul
 static _mali_osk_errcode_t mali_pm_upper_half(void *data);
 static void mali_pm_bottom_half(void *data);
 static void mali_pm_powerup(void);
-static void mali_pm_powerdown(mali_power_mode power_mode, enum mali_pm_level old_level);
+static void mali_pm_powerdown(mali_power_mode power_mode);
 
 static void timeout_light_sleep(void* arg);
 #if 0
@@ -165,9 +163,9 @@ static void mali_pm_powerup(void)
 	mali_group_power_on();
 }
 
-static void mali_pm_powerdown(mali_power_mode power_mode, enum mali_pm_level old_level)
+static void mali_pm_powerdown(mali_power_mode power_mode)
 {
-	if ( (MALI_PM_LEVEL_1_ON == old_level) || (MALI_PM_LEVEL_2_STANDBY == old_level) )
+	if ( (MALI_PM_LEVEL_1_ON == current_level) || (MALI_PM_LEVEL_2_STANDBY == current_level) )
 	{
 		mali_group_power_off();
 	}
@@ -275,34 +273,20 @@ static void mali_pm_process_next(void)
 			/* This is just an internal state, so we don't bother to report it to the platform file */
 			idle_timer_running = MALI_TRUE;
 			_mali_osk_timer_setcallback(idle_timer, timeout_light_sleep, (void*) mali_pm_event_number_get());
-			_mali_osk_timer_add(idle_timer, _mali_osk_time_mstoticks(mali_pm_sampling_rate));
+			_mali_osk_timer_add(idle_timer, _mali_osk_time_mstoticks(MALI_PM_LIGHT_SLEEP_TIMEOUT));
 		}
 		else if (MALI_PM_LEVEL_3_LIGHT_SLEEP == pm_level_to_set)
 		{
-			enum mali_pm_level old_level = current_level;
-
-			mali_pm_lock();
-			current_level = pm_level_to_set;
-			mali_pm_unlock();
-
-			mali_pm_powerdown(MALI_POWER_MODE_LIGHT_SLEEP, old_level);
+			mali_pm_powerdown(MALI_POWER_MODE_LIGHT_SLEEP);
 		}
 		else if (MALI_PM_LEVEL_4_DEEP_SLEEP == pm_level_to_set)
 		{
-			enum mali_pm_level old_level = current_level;
-
-			mali_pm_lock();
-			current_level = pm_level_to_set;
-			mali_pm_unlock();
-
 			MALI_DEBUG_PRINT(2, ("Mali PM: Setting GPU power mode to MALI_POWER_MODE_DEEP_SLEEP\n"));
-			mali_pm_powerdown(MALI_POWER_MODE_DEEP_SLEEP, old_level);
+			mali_pm_powerdown(MALI_POWER_MODE_DEEP_SLEEP);
 		}
 	}
 	else if (MALI_PM_SCHEME_OS_SUSPENDED == current_scheme)
 	{
-		enum mali_pm_level old_level = current_level;
-
 		MALI_DEBUG_PRINT(4, ("Mali PM: OS scheme; Changing Mali GPU power state from %s to: %s\n", state_as_string(current_level), state_as_string(MALI_PM_LEVEL_4_DEEP_SLEEP)));
 
 		pm_level_to_set = MALI_PM_LEVEL_4_DEEP_SLEEP;
@@ -320,13 +304,9 @@ static void mali_pm_process_next(void)
 			idle_timer_running = MALI_FALSE;
 		}
 
-		mali_pm_lock();
-		current_level = pm_level_to_set;
-		mali_pm_unlock();
-
 		MALI_DEBUG_PRINT(2, ("Mali PM: Setting GPU power mode to MALI_POWER_MODE_DEEP_SLEEP\n"));
-		mali_pm_powerdown(MALI_POWER_MODE_DEEP_SLEEP, old_level);
-		next_level_dynamic = old_level;
+		mali_pm_powerdown(MALI_POWER_MODE_DEEP_SLEEP);
+		next_level_dynamic = current_level;
 	}
 	else if (MALI_PM_SCHEME_ALWAYS_ON == current_scheme)
 	{

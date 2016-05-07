@@ -13,10 +13,7 @@
 #include "mali_platform.h"
 
 /* Define how often to calculate and report GPU utilization, in milliseconds */
-#define MALI_GPU_UTILIZATION_TIMEOUT 1000
-
-/* cocafe: add a module paramerter to control utilization timeout */
-int mali_utilization_sampling_rate = MALI_GPU_UTILIZATION_TIMEOUT;
+#define MALI_GPU_UTILIZATION_TIMEOUT 500
 
 static _mali_osk_lock_t *time_data_lock;
 
@@ -105,7 +102,7 @@ static void calculate_gpu_utilization(void* arg)
 
 	_mali_osk_lock_signal(time_data_lock, _MALI_OSK_LOCKMODE_RW);
 
-	_mali_osk_timer_add(utilization_timer, _mali_osk_time_mstoticks(mali_utilization_sampling_rate));
+	_mali_osk_timer_add(utilization_timer, _mali_osk_time_mstoticks(MALI_GPU_UTILIZATION_TIMEOUT));
 
 
 	mali_gpu_utilization_handler(utilization);
@@ -186,7 +183,7 @@ void mali_utilization_core_start(u64 time_now)
 
 			_mali_osk_lock_signal(time_data_lock, _MALI_OSK_LOCKMODE_RW);
 
-			_mali_osk_timer_add(utilization_timer, _mali_osk_time_mstoticks(mali_utilization_sampling_rate));
+			_mali_osk_timer_add(utilization_timer, _mali_osk_time_mstoticks(MALI_GPU_UTILIZATION_TIMEOUT));
 		}
 		else
 		{
