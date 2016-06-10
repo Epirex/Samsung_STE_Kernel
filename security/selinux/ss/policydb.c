@@ -13,7 +13,7 @@
  *
  *	Added conditional policy language extensions
  *
- * Updated: Hewlett-Packard <paul@paul-moore.com>
+ * Updated: Hewlett-Packard <paul.moore@hp.com>
  *
  *      Added support for the policy capability bitmap
  *
@@ -1743,6 +1743,8 @@ static int policydb_bounds_sanity_check(struct policydb *p)
 	return 0;
 }
 
+extern int ss_initialized;
+
 u16 string_to_security_class(struct policydb *p, const char *name)
 {
 	struct class_datum *cladatum;
@@ -1914,19 +1916,7 @@ static int filename_trans_read(struct policydb *p, void *fp)
 		if (rc)
 			goto out;
 
-		rc = hashtab_insert(p->filename_trans, ft, otype);
-		if (rc) {
-			/*
-			 * Do not return -EEXIST to the caller, or the system
-			 * will not boot.
-			 */
-			if (rc != -EEXIST)
-				goto out;
-			/* But free memory to avoid memory leak. */
-			kfree(ft);
-			kfree(name);
-			kfree(otype);
-		}
+		hashtab_insert(p->filename_trans, ft, otype);
 	}
 	hash_eval(p->filename_trans, "filenametr");
 	return 0;
