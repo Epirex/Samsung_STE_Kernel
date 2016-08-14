@@ -20,8 +20,6 @@
 
 #define MALI_PM_LIGHT_SLEEP_TIMEOUT 1000
 
-int mali_pm_sampling_rate = MALI_PM_LIGHT_SLEEP_TIMEOUT;
-
 enum mali_pm_scheme
 {
 	MALI_PM_SCHEME_DYNAMIC,
@@ -275,7 +273,7 @@ static void mali_pm_process_next(void)
 			/* This is just an internal state, so we don't bother to report it to the platform file */
 			idle_timer_running = MALI_TRUE;
 			_mali_osk_timer_setcallback(idle_timer, timeout_light_sleep, (void*) mali_pm_event_number_get());
-			_mali_osk_timer_add(idle_timer, _mali_osk_time_mstoticks(mali_pm_sampling_rate));
+			_mali_osk_timer_add(idle_timer, _mali_osk_time_mstoticks(MALI_PM_LIGHT_SLEEP_TIMEOUT));
 		}
 		else if (MALI_PM_LEVEL_3_LIGHT_SLEEP == pm_level_to_set)
 		{
