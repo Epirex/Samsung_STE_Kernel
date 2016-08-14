@@ -72,11 +72,18 @@ endif
 
 
 ifeq ($(USING_PROFILING),1)
+ifeq ($(USING_INTERNAL_PROFILING),0)
 ifndef CONFIG_TRACEPOINTS
 # Should default to gator profiling, but we dont have the kernel feature required, so disable profiling
 override USING_PROFILING = 0
 $(warning "CONFIG_TRACEPOINTS required for USING_PROFILING")
 endif
+endif
+endif
+
+ifeq ($(USING_PROFILING),0)
+# make sure user hasnt selected incompatible flags
+override USING_INTERNAL_PROFILING = 0
 endif
 
 MALI_RELEASE_NAME=$(shell cat $(DRIVER_DIR)/.version 2> /dev/null)
@@ -114,7 +121,7 @@ MALI_PLATFORM_FILE = platform/default/mali_platform.c
 endif
 
 # Get subversion revision number, fall back to only ${MALI_RELEASE_NAME} if no svn info is available
-SVN_REV := $(shell (cd $(DRIVER_DIR); (svnversion | grep -qv exported && svnversion) || git svn info | grep '^Revision: '| sed -e 's/^Revision: //' ) 2>/dev/null )
+SVN_REV := $(shell (cd $(DRIVER_DIR); (svnversion | grep -qv exported | grep -qv "Unversioned directory" && svnversion) || git svn info | grep '^Revision: '| sed -e 's/^Revision: //' ) 2>/dev/null )
 ifeq ($(SVN_REV),)
 SVN_REV := $(MALI_RELEASE_NAME)
 else
@@ -128,7 +135,7 @@ $(error No configuration found for config $(CONFIG). Check that arch-$(CONFIG)/c
 else
 # Link arch to the selected arch-config directory
 $(shell [ -L $(DRIVER_DIR)/arch ] && rm $(DRIVER_DIR)/arch)
-$(shell ln -sf arch-$(CONFIG) $(DRIVER_DIR)/arch)
+$(shell ln -sf $(DRIVER_DIR)/arch-$(CONFIG) $(DRIVER_DIR)/arch)
 $(shell touch $(DRIVER_DIR)/arch/config.h)
 endif
 
@@ -153,7 +160,7 @@ DEFINES += -DMALI_TIMELINE_PROFILING_ENABLED=$(USING_PROFILING)
 DEFINES += -DMALI_POWER_MGMT_TEST_SUITE=$(USING_MALI_PMM_TESTSUITE)
 ifeq ($(shell test $(SUBLEVEL) -gt 32 -a $(PATCHLEVEL) = 6 -a $(VERSION) = 2 -o $(VERSION) -gt 2 && echo "OK"),OK)
 # MALI_STATE_TRACKING is only supported on Linux kernels from version 2.6.32.
-DEFINES += -DMALI_STATE_TRACKING=1
+DEFINES += -DMALI_STATE_TRACKING=0
 else
 DEFINES += -DMALI_STATE_TRACKING=0
 endif
@@ -230,17 +237,21 @@ SRC = \
 	__malidrv_build_info.c
 
 # Selecting files to compile by parsing the config file
-ifeq ($(USING_PROFILING),1)
-SRC += \
-    linux/mali_osk_profiling.c
 
 ifeq ($(USING_INTERNAL_PROFILING),1)
-SRC += \
-    linux/mali_profiling_internal.c \
+PROFILING_BACKEND_SOURCES = \
+    linux/mali_osk_profiling_internal.c \
     timestamp-$(TIMESTAMP)/mali_timestamp.c
 ccflags-y += -I$(DRIVER_DIR)/timestamp-$(TIMESTAMP)
+else
+ifeq ($(USING_PROFILING),1)
+PROFILING_BACKEND_SOURCES = \
+    linux/mali_osk_profiling_gator.c
 endif
 endif
+
+# Add the profiling sources
+SRC += $(PROFILING_BACKEND_SOURCES)
 
 ifeq ($(USING_MALI_PMM_TESTSUITE),1)
 ccflags-y += -I$(DRIVER_DIR)/platform/mali_pmu_testing
